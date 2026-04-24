@@ -8,19 +8,22 @@ This Terraform configuration provisions multiple VMs on Proxmox using the Telmat
 # 1. Bootstrap your host (first time only)
 sudo ./bootstraphost.sh
 
-# 2. Configure your Proxmox credentials
+# 2. Bootstrap Proxmox API user (first time only)
+./userbootstrap.sh
+
+# 3. Configure your Proxmox credentials
 cp terraform.tfvars.example terraform.tfvars
 vim terraform.tfvars
 
-# 3. Deploy infrastructure
+# 4. Deploy infrastructure
 terraform init
 terraform plan
 terraform apply
 
-# 4. View created resources
+# 5. View created resources
 make output
 
-# 5. Destroy when done
+# 6. Destroy when done
 terraform destroy
 ```
 
@@ -54,7 +57,7 @@ The bootstrap script will:
 - ✓ Detect your Linux distribution (Debian/Ubuntu or Fedora/RHEL)
 - ✓ Update your package manager
 - ✓ Install Terraform
-- ✓ Install required dependencies (curl, git, jq, openssh-client, etc.)
+- ✓ Install required dependencies (curl, git, jq, openssh-client, ca-certificates, sshpass)
 - ✓ Install optional tools (make, vim, tflint)
 - ✓ Verify all installations
 
@@ -76,25 +79,83 @@ Proxmox Terraform Bootstrap Script
 ✓ Bootstrap complete!
 ```
 
-### 2. Create Proxmox API Token
+### 2. Bootstrap Proxmox API User (First Time Only)
 
-1. Log into Proxmox Web UI
-2. Navigate to **Datacenter** → **Permissions** → **API Tokens**
-3. Click **Add** to create a new token
-4. Set the following:
-   - **User**: `terraform` (or your user)
-   - **Realm**: `pam`
-   - **Token ID**: `terraform-token`
-   - **Privilege Separation**: Enabled (optional)
-5. Copy the token secret immediately (shown only once)
+Before running Terraform, you need to create an API user on your Proxmox host with appropriate permissions for VM and disk management.
 
-### 3. Grant Permissions
+**Run the user bootstrap script:**
 
-In Proxmox, grant the API token permissions:
-- **Path**: `/nodes`
-- **Permission**: `Sys.Audit`, `Vm.Allocate`, `Vm.Clone`, `Vm.Config.All`, `Vm.Monitor`, `Vm.PowerMgmt`
+```bash
+# Interactive mode (recommended) - will prompt for hostname and password
+./userbootstrap.sh
+```
 
-### 4. Configure Terraform
+The script will:
+- ✓ **Prompt for Proxmox hostname** and root password
+- ✓ **Prompt for Terraform user password** (with confirmation)
+- ✓ Connect to your Proxmox host via SSH
+- ✓ Create a local Linux user called `terraform` with home directory and bash shell
+- ✓ Set the password for the `terraform` user
+- ✓ Create the Proxmox user `terraform@pam`
+- ✓ Create "APIAutomation" role with VM and storage permissions
+- ✓ Assign the role to the user on `/vms` and `/storage` paths
+- ✓ Generate an API token
+- ✓ Display the token for use in `terraform.tfvars`
+
+**Interactive Prompts:**
+```
+Proxmox Host Setup
+This script will create a terraform user with Proxmox API access.
+It will create a local Linux user, Proxmox user, and API token.
+
+Enter Proxmox hostname or IP address: proxmox.example.com
+
+SSH Authentication
+Connecting as root user to proxmox.example.com:
+Root password: [hidden input]
+
+Terraform User Setup
+Creating local Linux user 'terraform' for Terraform operations.
+Password for terraform user: [hidden input]
+Confirm password for terraform user: [hidden input]
+```
+
+**Expected Output:**
+```
+========================================
+Proxmox User Bootstrap Script
+========================================
+
+✓ SSH connection and pvesh availability confirmed
+✓ Local user terraform created
+✓ Password set for user terraform
+✓ Proxmox user terraform@pam created
+✓ Role APIAutomation created
+✓ VM and storage permissions added to role APIAutomation
+✓ APIAutomation permissions set for terraform@pam
+✓ API token generated successfully
+
+========================================
+API Token Generated
+========================================
+User ID: terraform@pam
+Token ID: terraform-token
+Token Secret: your-generated-token-here
+
+Add this to your terraform.tfvars file:
+proxmox_api_token_id = "terraform@pam!terraform-token"
+proxmox_api_token    = "your-generated-token-here"
+
+⚠ IMPORTANT: Save this token securely! It will not be shown again.
+```
+
+**Permissions Granted:**
+The `terraform@pam` user gets the "APIAutomation" role with permissions for:
+- **VM Operations**: Allocate, Configure (CPU/Memory/Disk/Network), Monitor, Power Management, Console
+- **Storage Operations**: Allocate Space, Allocate
+- **Paths**: `/vms` and `/storage` (full access to create/manage VMs and disks)
+
+### 3. Configure Terraform
 
 1. Copy `terraform.tfvars.example` to `terraform.tfvars`:
    ```bash
@@ -111,12 +172,12 @@ In Proxmox, grant the API token permissions:
 
 3. (Optional) Override VM configuration in `terraform.tfvars` - the stack includes default VMs
 
-### 5. Create VM Template (if not exists)
+### 4. Create VM Template (if not exists)
 
 You need a template to clone from. Example:
 - Ubuntu 22.04 template named `ubuntu-22-04-template`
 
-### 6. Deploy Infrastructure
+### 5. Deploy Infrastructure
 
 ```bash
 # Initialize Terraform
@@ -267,7 +328,8 @@ Note: Some changes may require VM restart
 
 ```
 .
-├── bootstraphost.sh             # Bootstrap script (install dependencies)
+├── bootstraphost.sh             # Bootstrap script (install dependencies including sshpass)
+├── userbootstrap.sh             # Create Proxmox API user and token
 ├── main.tf                      # Main Terraform configuration
 ├── variables.tf                 # Variable definitions
 ├── outputs.tf                   # Output value definitions
@@ -286,7 +348,8 @@ Note: Some changes may require VM restart
 
 | File | Purpose |
 |------|---------|
-| `bootstraphost.sh` | Automated setup script - installs Terraform and dependencies on Debian/Ubuntu or Fedora/RHEL |
+| `bootstraphost.sh` | Automated setup script - installs Terraform and dependencies (including sshpass) on Debian/Ubuntu or Fedora/RHEL |
+| `userbootstrap.sh` | Interactive script to create Proxmox API user with VM/disk permissions and generate API token |
 | `main.tf` | Core Terraform configuration with Proxmox provider and VM resources |
 | `variables.tf` | Input variables with types, defaults, and descriptions |
 | `outputs.tf` | Output values exported after deployment |

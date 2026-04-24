@@ -117,7 +117,7 @@ update_package_manager() {
 install_debian_packages() {
     print_header "Installing packages for Debian/Ubuntu"
     
-    local packages="curl wget git jq unzip openssh-client ca-certificates"
+    local packages="curl wget git jq unzip openssh-client ca-certificates sshpass"
     
     print_info "Installing core dependencies: $packages"
     apt-get install -y -qq $packages
@@ -148,7 +148,7 @@ install_terraform_debian() {
 install_fedora_packages() {
     print_header "Installing packages for Fedora/RHEL"
     
-    local packages="curl wget git jq unzip openssh-clients ca-certificates"
+    local packages="curl wget git jq unzip openssh-clients ca-certificates sshpass"
     
     print_info "Installing core dependencies: $packages"
     dnf install -y -q $packages
@@ -222,7 +222,7 @@ install_optional_tools() {
 verify_installations() {
     print_header "Verifying Installations"
     
-    local tools=("terraform" "curl" "git" "jq" "ssh")
+    local tools=("terraform" "curl" "git" "jq" "ssh" "sshpass")
     local missing=0
     
     for tool in "${tools[@]}"; do
@@ -255,6 +255,7 @@ display_summary() {
     echo "  • unzip - Archive extraction"
     echo "  • openssh-client - SSH connectivity"
     echo "  • ca-certificates - SSL/TLS certificates"
+    echo "  • sshpass - SSH password authentication"
     
     if [[ $INSTALL_OPTIONAL == true ]]; then
         echo ""
