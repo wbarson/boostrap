@@ -92,6 +92,16 @@ detect_distro() {
     esac
 }
 
+# Clean up old HashiCorp repository sources
+cleanup_old_repos() {
+    if [[ $DISTRO_TYPE == "debian" ]]; then
+        print_info "Cleaning up old HashiCorp repository sources..."
+        rm -f /etc/apt/sources.list.d/hashicorp.list /etc/apt/sources.list.d/terraform.list
+        apt-key del AA16FCBCA621E701 2>/dev/null || true
+        apt-get update -qq 2>/dev/null || true
+    fi
+}
+
 # Update package manager
 update_package_manager() {
     print_info "Updating package manager..."
@@ -118,10 +128,12 @@ install_debian_packages() {
 install_terraform_debian() {
     print_info "Installing Terraform..."
     
-    # Add HashiCorp GPG key
-    curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add - > /dev/null 2>&1
+    # Download and add HashiCorp GPG key
+    mkdir -p /usr/share/keyrings
+    curl -fsSL https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg 2>/dev/null || \
+        print_warning "Failed to download GPG key"
     
-    # Add HashiCorp repository
+    # Add HashiCorp repository with signed key
     echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | \
         tee /etc/apt/sources.list.d/hashicorp.list > /dev/null
     
@@ -294,6 +306,9 @@ main() {
     
     # Detect distribution
     detect_distro
+    
+    # Clean up old repository sources
+    cleanup_old_repos
     
     # Update package manager
     update_package_manager
