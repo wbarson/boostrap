@@ -1,0 +1,49 @@
+#cloud-config
+hostname: ${hostname}
+fqdn: ${hostname}.example.com
+manage_etc_hosts: true
+
+users:
+  - name: ${username}
+    gecos: Default User
+    groups: [adm, audio, cdrom, dialout, dip, floppy, lxd, plugdev, sudo, video]
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    lock_passwd: true
+    ssh_authorized_keys: []
+
+package_update: true
+package_upgrade: true
+packages:
+  - curl
+  - wget
+  - git
+  - htop
+  - net-tools
+  - vim
+  - openssh-server
+
+write_files:
+  - path: /etc/apt/apt.conf.d/50unattended-upgrades
+    content: |
+      Unattended-Upgrade::Allowed-Origins {
+        "$${distro_id}:$${distro_codename}";
+        "$${distro_id}ESMApps:$${distro_codename}-apps-security";
+        "$${distro_id}ESM:$${distro_codename}-infra-security";
+      };
+    owner: root:root
+    permissions: '0644'
+
+runcmd:
+  - systemctl enable ssh
+  - systemctl start ssh
+
+# Configure timezone
+timezone: UTC
+
+# Power state configuration
+power_state:
+  mode: reboot
+  message: Cloud-init complete, rebooting
+  timeout: 30
+  condition: True

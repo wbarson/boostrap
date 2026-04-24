@@ -1,0 +1,40 @@
+# Proxmox API Configuration
+proxmox_api_url      = "https://10.0.0.1:8006/api2/json"
+proxmox_api_token_id = "terraform@pam!terraform-token"
+proxmox_api_token    = "your-api-token-secret-here"
+proxmox_tls_insecure = false
+
+# VMs Configuration (using default from variables.tf)
+# To override, uncomment and modify:
+# vms = {
+#   "custom-vm" = {
+#     name               = "custom-vm"
+#     vmid               = 200
+#     target_node        = "pve-node-1"
+#     clone_template     = "ubuntu-22-04-template"
+#     cores              = 2
+#     memory             = 2048
+#     balloon            = 1024
+#     boot_order         = "order=scsi0;ide2;net0"
+#     on_boot            = true
+#     full_clone         = true
+#     agent_enabled      = true
+#     hotplug_enabled    = "network,disk,cpu,memory"
+#     cloud_init_enabled = true
+#     cloud_init_user    = "ubuntu"
+#     networks = [
+#       {
+#         model  = "virtio"
+#         bridge = "vmbr0"
+#       }
+#     ]
+#     disks = [
+#       {
+#         type    = "scsi"
+#         storage = "local-lvm"
+#         size    = "20G"
+#         format  = "raw"
+#       }
+#     ]
+#   }
+# }
