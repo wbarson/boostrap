@@ -156,6 +156,24 @@ install_terraform_fedora() {
     print_success "Terraform installed"
 }
 
+# Install VS Code extensions
+install_vscode_extensions() {
+    if ! command -v code &> /dev/null; then
+        print_warning "VS Code not found. Skipping extension installation."
+        print_info "To install VS Code: https://code.visualstudio.com/download"
+        return 0
+    fi
+    
+    print_info "Installing VS Code extensions..."
+    
+    # Install Terraform HCL extension
+    print_info "Installing Terraform HCL extension (HashiCorp)..."
+    code --install-extension hashicorp.terraform --force 2>/dev/null || \
+        print_warning "Failed to install Terraform extension (may already be installed)"
+    
+    print_success "VS Code extensions installation complete"
+}
+
 # Install optional tools
 install_optional_tools() {
     print_header "Installing Optional Tools"
@@ -181,6 +199,9 @@ install_optional_tools() {
                 print_warning "Failed to install tflint"
         fi
     fi
+    
+    # Install VS Code extensions
+    install_vscode_extensions
     
     print_success "Optional tools installation complete"
 }
@@ -229,6 +250,7 @@ display_summary() {
         echo "  • make - Build automation"
         echo "  • vim - Text editor"
         echo "  • tflint - Terraform linter"
+        echo "  • VS Code Terraform extension - HCL syntax support and language features"
     fi
     
     echo ""
