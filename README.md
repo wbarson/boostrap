@@ -2,16 +2,81 @@
 
 This Terraform configuration provisions multiple VMs on Proxmox using the Telmate provider.
 
+## Quick Start
+
+```bash
+# 1. Bootstrap your host (first time only)
+sudo ./bootstraphost.sh
+
+# 2. Configure your Proxmox credentials
+cp terraform.tfvars.example terraform.tfvars
+vim terraform.tfvars
+
+# 3. Deploy infrastructure
+terraform init
+terraform plan
+terraform apply
+
+# 4. View created resources
+make output
+
+# 5. Destroy when done
+terraform destroy
+```
+
+For detailed instructions, see [Setup Instructions](#setup-instructions) below.
+
 ## Prerequisites
 
-1. **Terraform** >= 1.0 installed
-2. **Proxmox** cluster with API access enabled
-3. **API Token** created in Proxmox with appropriate permissions
-4. **VM Template** already created in Proxmox to clone from
+1. **Linux Host** - Debian/Ubuntu or Fedora/RHEL/CentOS
+2. **Sudo or Root Access** - Required to install packages
+3. **Proxmox** cluster with API access enabled
+4. **API Token** created in Proxmox with appropriate permissions
+5. **VM Template** already created in Proxmox to clone from
 
 ## Setup Instructions
 
-### 1. Create Proxmox API Token
+### 1. Bootstrap Your Host (First Time Only)
+
+Before using Terraform, you must install required packages on your Linux host.
+
+**For Debian/Ubuntu or Fedora/RHEL:**
+
+```bash
+# Clone or download this repository
+cd bootstrap
+
+# Run the bootstrap script (requires sudo or root)
+sudo ./bootstraphost.sh
+```
+
+The bootstrap script will:
+- ✓ Detect your Linux distribution (Debian/Ubuntu or Fedora/RHEL)
+- ✓ Update your package manager
+- ✓ Install Terraform
+- ✓ Install required dependencies (curl, git, jq, openssh-client, etc.)
+- ✓ Install optional tools (make, vim, tflint)
+- ✓ Verify all installations
+
+**Expected Output:**
+```
+========================================
+Proxmox Terraform Bootstrap Script
+========================================
+
+✓ Detected Debian/Ubuntu (ubuntu 22.04)
+✓ Package manager updated
+✓ Core dependencies installed
+✓ Terraform installed
+✓ Optional tools installation complete
+✓ terraform: Terraform v1.x.x...
+✓ curl: curl 7.x.x...
+✓ git: git version 2.x.x...
+...
+✓ Bootstrap complete!
+```
+
+### 2. Create Proxmox API Token
 
 1. Log into Proxmox Web UI
 2. Navigate to **Datacenter** → **Permissions** → **API Tokens**
@@ -23,13 +88,13 @@ This Terraform configuration provisions multiple VMs on Proxmox using the Telmat
    - **Privilege Separation**: Enabled (optional)
 5. Copy the token secret immediately (shown only once)
 
-### 2. Grant Permissions
+### 3. Grant Permissions
 
 In Proxmox, grant the API token permissions:
 - **Path**: `/nodes`
 - **Permission**: `Sys.Audit`, `Vm.Allocate`, `Vm.Clone`, `Vm.Config.All`, `Vm.Monitor`, `Vm.PowerMgmt`
 
-### 3. Configure Terraform
+### 4. Configure Terraform
 
 1. Copy `terraform.tfvars.example` to `terraform.tfvars`:
    ```bash
@@ -46,12 +111,12 @@ In Proxmox, grant the API token permissions:
 
 3. (Optional) Override VM configuration in `terraform.tfvars` - the stack includes default VMs
 
-### 4. Create VM Template (if not exists)
+### 5. Create VM Template (if not exists)
 
 You need a template to clone from. Example:
 - Ubuntu 22.04 template named `ubuntu-22-04-template`
 
-### 5. Deploy Infrastructure
+### 6. Deploy Infrastructure
 
 ```bash
 # Initialize Terraform
@@ -202,14 +267,35 @@ Note: Some changes may require VM restart
 
 ```
 .
+├── bootstraphost.sh             # Bootstrap script (install dependencies)
 ├── main.tf                      # Main Terraform configuration
 ├── variables.tf                 # Variable definitions
+├── outputs.tf                   # Output value definitions
+├── locals.tf                    # Local variable definitions
 ├── terraform.tfvars.example     # Example values (copy and customize)
 ├── cloud-init.yaml              # Cloud-init template
+├── examples.md                  # Example VM configurations
+├── Makefile                     # Convenient make commands
+├── .gitignore                   # Git ignore patterns
 ├── terraform.tfstate            # State file (auto-generated)
 ├── terraform.tfstate.backup     # State backup (auto-generated)
 └── README.md                    # This file
 ```
+
+### File Descriptions
+
+| File | Purpose |
+|------|---------|
+| `bootstraphost.sh` | Automated setup script - installs Terraform and dependencies on Debian/Ubuntu or Fedora/RHEL |
+| `main.tf` | Core Terraform configuration with Proxmox provider and VM resources |
+| `variables.tf` | Input variables with types, defaults, and descriptions |
+| `outputs.tf` | Output values exported after deployment |
+| `locals.tf` | Local values for common configuration |
+| `terraform.tfvars.example` | Template for sensitive values (copy to `terraform.tfvars`) |
+| `cloud-init.yaml` | Cloud-init configuration template for VM initialization |
+| `examples.md` | Various VM configuration examples for different use cases |
+| `Makefile` | Convenience commands: `make init`, `make plan`, `make apply`, etc. |
+| `.gitignore` | Prevents committing sensitive files and artifacts |
 
 ## Troubleshooting
 
